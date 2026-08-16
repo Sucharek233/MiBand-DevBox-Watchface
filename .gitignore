@@ -1,0 +1,9 @@
+# Build files and directories
+output
+resource.bin
+
+# Helper scripts
+compile.sh
+compile.bat
+
+lvgl.lua
