@@ -16,7 +16,7 @@ end
 
 function LuaShell:execute(request)
     local codeStr = request.args.code
-    request.state = "done"
+    request.state = MailboxStates.DONE
 
     local printLogs = {}
     local originalPrint = print
@@ -34,7 +34,7 @@ function LuaShell:execute(request)
     local chunk, err = load(codeStr)
 
     if not chunk then
-        request.luaState = "error"
+        request.luaState = MailboxStates.ERROR
         request.reason = "syntax"
         request.msg = tostring(err)
         request.args = nil
@@ -50,7 +50,7 @@ function LuaShell:execute(request)
     local printOutput = #printLogs > 0 and table.concat(printLogs, "\n") or nil
 
     if not success then
-        request.luaState = "error"
+        request.luaState = MailboxStates.ERROR
         request.reason = "runtime"
         request.msg = tostring(result)
         request.print = printOutput
@@ -61,7 +61,7 @@ function LuaShell:execute(request)
 
     result = sanitizer.sanitize(result)
 
-    request.luaState = "done"
+    request.luaState = MailboxStates.DONE
     request.res = result
     request.print = printOutput -- will be run through json.encode anyway, here it's already sanitized
     request.args = nil

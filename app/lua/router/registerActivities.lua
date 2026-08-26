@@ -1,6 +1,8 @@
 local RouterRegister = {}
 RouterRegister.__index = RouterRegister
 
+require "constants.mailboxStates"
+
 local Terminal = require "router.activities.terminal"
 local FileManager = require "router.activities.fileManager.fileManager"
 local Sensors = require "router.activities.sensors.sensors"

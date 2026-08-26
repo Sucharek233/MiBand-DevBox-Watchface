@@ -9,8 +9,8 @@ local basePaths = {
     -- in the end, this is a pretty nice addition :)
     -- it adds compatibility with other models too
     real = {
-        var1 = "/data/files",
-        var2 = "/data/quickapp/files"
+        "/data/quickapp/files",
+        "/data/files"
     },
     quickapp = "internal://files",
     pkgName = "com.sucharek.miband_interconnect_test",
@@ -27,13 +27,32 @@ local activityPaths = {
     }
 }
 
+-- If activity path is an object, it'll be checked which one is valid
+-- Regular strings aren't checked
+local variableActivityPaths = {
+    apps = {
+        jsonList = {
+            "/data/quickapp/apps.json",
+            "/data/apps.json"
+        },
+        appPath = {
+            "/data/quickapp/app",
+            "/data/app"
+        }
+    }
+}
+
 local function checkPaths()
     local basePath = ""
-    if fileOps.dirExists(basePaths.real.var1) then
-        basePath = basePaths.real.var1
-    elseif fileOps.dirExists(basePaths.real.var2) then
-        basePath = basePaths.real.var2
-    else
+
+     for _, path in ipairs(basePaths.real) do
+        if fileOps.dirExists(path) then
+            basePath = path
+            break
+        end
+    end
+
+    if basePath == "" then
         error("No valid path found")
     end
 
@@ -43,6 +62,24 @@ local function checkPaths()
 
         activityPaths = activityPaths
     }
+    
+    for _, activity in ipairs(variableActivityPaths) do
+        local thisActivityPaths = {}
+        for key, path in pairs(activity) do
+            if type(path) == "table" then
+                for _, p in ipairs(path) do
+                    if fileOps.fileExists(p) or fileOps.dirExists(p) then
+                        thisActivityPaths[key] = p
+                        break
+                    end
+                end
+            else
+                thisActivityPaths[key] = path
+            end
+        end
+        paths.activityPaths[activity] = thisActivityPaths
+    end
+     
     -- don't need quickapp path for mailbox, since it's already set there
     paths.mailbox = paths.real .. "/" .. basePaths.mailbox
 

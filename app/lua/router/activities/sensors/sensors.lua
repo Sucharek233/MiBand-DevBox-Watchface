@@ -201,7 +201,7 @@ function Sensors:subscribe(args)
 
     self:startFlushing()
 
-    return "done", "Subscribed"
+    return MailboxStates.DONE, "Subscribed"
 end
 
 function Sensors:unsubscribe()
@@ -210,7 +210,7 @@ function Sensors:unsubscribe()
         self.activeSensor.obj:stop()
         self.activeSensor.obj = nil
     else
-        return "error", "Not subscribed"
+        return MailboxStates.ERROR, "Not subscribed"
     end
 
     self.activeSensor.provider = nil
@@ -219,7 +219,7 @@ function Sensors:unsubscribe()
 
     self:stopFlushing()
 
-    return "error", "Unsubscribed"
+    return MailboxStates.DONE, "Unsubscribed"
 end
 
 function Sensors:handle(request)
@@ -240,7 +240,7 @@ function Sensors:handle(request)
     end
 
     request.args = nil
-    request.state = "done"
+    request.state = MailboxStates.DONE
     request.sensorState = state
     request.res = result
     self.mailbox:writeMailbox(request)

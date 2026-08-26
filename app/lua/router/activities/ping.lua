@@ -25,7 +25,7 @@ local function getPreciseTimestampMs()
 end
 
 function Ping:ping(request)
-    request.state = "done"
+    request.state = MailboxStates.DONE
     request.time = getPreciseTimestampMs()
     self.mailbox:writeMailbox(request)
 end

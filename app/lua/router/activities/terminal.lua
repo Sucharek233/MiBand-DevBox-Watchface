@@ -28,7 +28,7 @@ function Terminal:run(request)
         command .. " > " .. self.paths.real .. "/" .. self.paths.outputFile
     local _, reason, code = os.execute(shellCommand)
 
-    request.state = "done"
+    request.state = MailboxStates.DONE
     request.reason = reason
     request.code = code
     request.out = self.paths.quickapp .. "/" .. self.paths.outputFile

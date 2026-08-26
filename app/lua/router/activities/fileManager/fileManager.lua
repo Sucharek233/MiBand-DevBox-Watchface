@@ -30,12 +30,12 @@ function FileManager:handle(request)
     }
 
     if result == nil then
-        request.state = "error"
+        request.state = MailboxStates.ERROR
         self.mailbox:writeMailbox(request)
         return
     end
 
-    request.state = "done"
+    request.state = MailboxStates.DONE
     request.result = result
     self.mailbox:writeMailbox(request)
 end
