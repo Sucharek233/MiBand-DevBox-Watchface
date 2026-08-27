@@ -8,6 +8,7 @@ local FileManager = require "router.activities.fileManager.fileManager"
 local Sensors = require "router.activities.sensors.sensors"
 local Ping = require "router.activities.ping"
 local LuaShell = require "router.activities.shell.shell"
+local Apps = require "router.activities.apps.apps"
 
 function RouterRegister:new(router, mailbox, paths)
     local obj = {
@@ -64,11 +65,21 @@ function RouterRegister:registerAll()
     self.router:register(shell.type, function(request)
         return shell:execute(request)
     end)
+
+    -- Apps
+    local apps = Apps:new(self.mailbox)
+    local appPaths = self:getPathsForActivity(apps, self.paths)
+    apps:setPaths(appPaths)
+    self.router:register(apps.type, function(request)
+        return apps:handle(request)
+    end)
+    self.apps = apps
 end
 
 function RouterRegister:clean()
     self.terminal:clean()
     self.sensors:clean()
+    self.apps:clean()
 end
 
 return RouterRegister

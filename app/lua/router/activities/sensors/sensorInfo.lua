@@ -1,7 +1,6 @@
 local SensorInfo = {}
 
 local lvgl = require("lvgl")
-local fileOps = require("helpers.fileOperations")
 
 SensorInfo.PATH = "/dev/uorb"
 
@@ -62,7 +61,7 @@ function SensorInfo.getAvailablePredefinedSensors()
 
     for _, sensor in pairs(SensorInfo.PREDEFINED) do
         local fullPath = SensorInfo.PATH .. "/" .. sensor.path
-        sensor.available = fileOps.fileExists(fullPath)
+        sensor.available = FileOps.fileExists(fullPath)
     end
 
     SensorInfo._checked = true

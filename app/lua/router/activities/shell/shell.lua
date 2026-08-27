@@ -2,7 +2,6 @@ local LuaShell = {}
 LuaShell.__index = LuaShell
 
 local sanitizer = require "router.activities.shell.sanitizer"
-local json = require "libs.json"
 
 function LuaShell:new(mailbox)
     local obj = {
@@ -63,7 +62,7 @@ function LuaShell:execute(request)
 
     request.luaState = MailboxStates.DONE
     request.res = result
-    request.print = printOutput -- will be run through json.encode anyway, here it's already sanitized
+    request.print = printOutput -- will be run through JSON.encode anyway, here it's already sanitized
     request.args = nil
     self.mailbox:writeMailbox(request)
 end

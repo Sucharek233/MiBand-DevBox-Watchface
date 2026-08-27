@@ -4,9 +4,6 @@ Sensors.__index = Sensors
 local SensorProvider = require "router.activities.sensors.sensorProvider"
 local sensorInfo = require "router.activities.sensors.sensorInfo"
 
-local json = require "libs.json"
-local fileOps = require "helpers.fileOperations"
-
 function Sensors:new(mailbox)
     local obj = {
         type = "sensorsLua",
@@ -46,7 +43,7 @@ end
 --- Here lies subscription parsing
 --- -------------------------------
 
-local function sanitizeForJson(val)
+local function sanitizeForJSON(val)
     local t = type(val)
     
     if t == "userdata" or t == "cdata" then
@@ -56,7 +53,7 @@ local function sanitizeForJson(val)
         for k, v in pairs(val) do
             if not IsNaN(v) then
                 local cleanKey = (type(k) == "userdata") and tostring(k) or k
-                cleanTable[cleanKey] = sanitizeForJson(v)
+                cleanTable[cleanKey] = sanitizeForJSON(v)
             end
         end
         return cleanTable
@@ -141,8 +138,8 @@ function Sensors:flushBufferToFile()
     -- Write selected array as JSON
     local filePath = self.paths.real .. "/" .. self.paths.outputFile
     local success, err = pcall(function()
-        local readingsJson = json.encode(selectedReadings)
-        fileOps.write(filePath, readingsJson)
+        local readingsJSON = JSON.encode(selectedReadings)
+        FileOps.write(filePath, readingsJSON)
     end)
 
     if not success then
@@ -166,7 +163,7 @@ function Sensors:subscribe(args)
         return "error", "Missing sensor name"
     end
     
-    if not fileOps.fileExists("/dev/uorb/" .. sensorName) then
+    if not FileOps.fileExists("/dev/uorb/" .. sensorName) then
         return "error", "Sensor not found"
     end
 
@@ -184,7 +181,7 @@ function Sensors:subscribe(args)
     local function onSensorData(rawReading)
         local parsed = parseReading(rawReading, provider, props)
         if parsed then
-            local parsedSanitized = sanitizeForJson(parsed)
+            local parsedSanitized = sanitizeForJSON(parsed)
             table.insert(self.buffer, parsedSanitized)
         end
     end

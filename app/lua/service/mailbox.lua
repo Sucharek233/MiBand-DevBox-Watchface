@@ -1,6 +1,5 @@
 local json = require "libs.json"
 local Paths = require "constants.paths"
-local fileOps = require "helpers.fileOperations"
 
 local Mailbox = {}
 Mailbox.__index = Mailbox
@@ -16,7 +15,7 @@ function Mailbox:new(router, paths)
 end
 
 function Mailbox:readMailbox()
-    local content, err = fileOps.read(self.paths.mailbox)
+    local content, err = FileOps.read(self.paths.mailbox)
 
     if content == nil or err then
         return nil
@@ -32,7 +31,7 @@ end
 
 
 function Mailbox:writeMailbox(content)
-    local success, err = fileOps.write(self.paths.mailbox, json.encode(content))
+    local success, err = FileOps.write(self.paths.mailbox, json.encode(content))
 
     if not success and err then
         error(err)
