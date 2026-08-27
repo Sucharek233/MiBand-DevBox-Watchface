@@ -75,16 +75,16 @@ function Apps:handle(request)
     elseif type == "listApps" then
         result = listParser.getApps(self.appList)
         state = MailboxStates.DONE
-    
+
     elseif type == "info" then
         state, result = listParser.getAppInfo(self.appList, args.pkg)
-    
+
     elseif type == "manifest" then
         state, result = listParser.readManifest(self.paths.appPath, args.pkg)
-    
+
     elseif type == "writeManifest" then
         state, result = listParser.writeManifest(self.paths.appPath, args.pkg, args.content)
-    
+
     elseif type == "icon" then
         state, result = listParser.getIcon(self.paths.appPath, args.pkg)
     end

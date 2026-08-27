@@ -5,6 +5,7 @@ local lvgl = require("lvgl")
 SensorInfo.PATH = "/dev/uorb"
 
 SensorInfo.PREDEFINED = {
+    -- info taken from mi band 10
     accel = {
         name = "Accelerometer",
         path = "sensor_accel0",
@@ -23,7 +24,7 @@ SensorInfo.PREDEFINED = {
     light = {
         name = "Light Sensor",
         path = "sensor_light0",
-        props = {"lux"}
+        props = {"lx"}
     },
     comp = {
         name = "Compass",
@@ -34,6 +35,32 @@ SensorInfo.PREDEFINED = {
         name = "Wrist Tilt",
         path = "algo_wrist_tilt0",
         props = {"_"}
+    },
+    -- info taken from emulator
+    hrate = {
+        name = "Heart Rate",
+        path = "sensor_hrate0",
+        props = {"bpm"}
+    },
+    temp = {
+        name = "Ambient Temperature",
+        path = "sensor_temp0",
+        props = {"°C"}
+    },
+    prox = {
+        name = "Proximity Sensor",
+        path = "sensor_prox0",
+        props = {"cm"}
+    },
+    baro = {
+        name = "Barometer",
+        path = "sensor_baro0",
+        props = {"hPa"}
+    },
+    humi = {
+        name = "Humidity Sensor",
+        path = "sensor_humi0",
+        props = {"%"}
     }
 }
 

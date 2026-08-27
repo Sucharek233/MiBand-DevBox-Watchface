@@ -102,6 +102,7 @@ local function getSensorTopic(name, period, callback)
         self.sub = topic.subscribe(name, function(_, _, values)
             -- the values variable is an array
             -- and the actual values are in the first index
+            values[1].timestamp = nil
             callback(values[1])
         end)
 

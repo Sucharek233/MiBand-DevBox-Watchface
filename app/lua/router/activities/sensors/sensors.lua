@@ -86,10 +86,7 @@ local function parseReading(rawReading, provider, props)
         parsedValues = rawReading.values
     end
 
-    return {
-        timestamp = rawReading.timestamp,
-        data = parsedValues
-    }
+    return parsedValues
 end
 
 -- 
@@ -156,7 +153,7 @@ function Sensors:subscribe(args)
 
     local provider = args.provider or "file"
     local sensorName = args.sensor
-    local useKnown = args.useKnown or false
+    local useKnown = args.useKnown or true
     local period = args.period or 50
 
     if not sensorName then
