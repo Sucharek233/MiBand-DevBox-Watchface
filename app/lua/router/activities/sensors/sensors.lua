@@ -134,14 +134,10 @@ function Sensors:flushBufferToFile()
 
     -- Write selected array as JSON
     local filePath = self.paths.real .. "/" .. self.paths.outputFile
-    local success, err = pcall(function()
+    pcall(function()
         local readingsJSON = JSON.encode(selectedReadings)
         FileOps.write(filePath, readingsJSON)
     end)
-
-    if not success then
-        print("[Sensors] Failed to write sensor output:", err)
-    end
 
     self.buffer = {}
 end
@@ -153,8 +149,12 @@ function Sensors:subscribe(args)
 
     local provider = args.provider or "file"
     local sensorName = args.sensor
-    local useKnown = args.useKnown or true
+    local useKnown = args.useKnown -- can't use or here
     local period = args.period or 50
+
+    if useKnown == nil then
+        useKnown = true
+    end
 
     if not sensorName then
         return "error", "Missing sensor name"
@@ -189,7 +189,7 @@ function Sensors:subscribe(args)
     self.activeSensor = {
         obj = providerObj,
         provider = provider,
-        known = (props ~= nil),
+        known = useKnown,
         props = props
     }
 

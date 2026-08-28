@@ -11,22 +11,10 @@ function Ping:new(mailbox)
     return obj
 end
 
--- quick ai generated function :)
-local function getPreciseTimestampMs()
-    local sec = os.time()
-    local clock = os.clock()
-
-    if not _G.__time_anchor then
-        _G.__time_anchor = sec - clock
-    end
-
-    local preciseTime = _G.__time_anchor + clock
-    return math.floor(preciseTime * 1000)
-end
-
 function Ping:ping(request)
+    -- Since os.time() only provides second precision
+    -- Ack time back results in negative and imprecise results
     request.state = MailboxStates.DONE
-    request.time = getPreciseTimestampMs()
     self.mailbox:writeMailbox(request)
 end
 

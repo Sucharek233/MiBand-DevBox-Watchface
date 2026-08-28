@@ -103,6 +103,7 @@ local function getSensorTopic(name, period, callback)
             -- the values variable is an array
             -- and the actual values are in the first index
             values[1].timestamp = nil
+            values[1].temperature = nil
             callback(values[1])
         end)
 
