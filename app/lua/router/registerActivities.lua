@@ -9,6 +9,7 @@ local Sensors = require "router.activities.sensors.sensors"
 local Ping = require "router.activities.ping"
 local LuaShell = require "router.activities.shell.shell"
 local Apps = require "router.activities.apps.apps"
+local SysInfo = require "router.activities.sysInfo"
 
 function RouterRegister:new(router, mailbox, paths)
     local obj = {
@@ -74,6 +75,12 @@ function RouterRegister:registerAll()
         return apps:handle(request)
     end)
     self.apps = apps
+
+    -- SysInfo
+    local sysInfo = SysInfo:new(self.mailbox)
+    self.router:register(sysInfo.type, function(request)
+        return sysInfo:handle(request)
+    end)
 end
 
 function RouterRegister:clean()

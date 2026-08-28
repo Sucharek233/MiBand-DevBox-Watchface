@@ -32,11 +32,11 @@ function Sensors:setPaths(paths)
 end
 
 local function returnSensorList()
-    return "done", sensorInfo.getAvailableSensors()
+    return MailboxStates.DONE, sensorInfo.getAvailableSensors()
 end
 
 local function returnPredefinedSensorList()
-    return "done", sensorInfo.getAvailablePredefinedSensors()
+    return MailboxStates.DONE, sensorInfo.getAvailablePredefinedSensors()
 end
 
 --- ------------------------------
@@ -144,7 +144,7 @@ end
 
 function Sensors:subscribe(args)
     if self.activeSensor.obj then
-        return "error", "Already subscribed"
+        return MailboxStates.ERROR, "Already subscribed"
     end
 
     local provider = args.provider or "file"
@@ -157,11 +157,11 @@ function Sensors:subscribe(args)
     end
 
     if not sensorName then
-        return "error", "Missing sensor name"
+        return MailboxStates.ERROR, "Missing sensor name"
     end
     
     if not FileOps.fileExists("/dev/uorb/" .. sensorName) then
-        return "error", "Sensor not found"
+        return MailboxStates.ERROR, "Sensor not found"
     end
 
     local props = nil

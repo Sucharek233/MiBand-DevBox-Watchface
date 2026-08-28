@@ -2,8 +2,8 @@ require "components"
 require "about"
 require "extraFunctions"
 
-FileOps = require "helpers.fileOperations"
 JSON = require "libs.json"
+FileOps = require "helpers.fileOperations"
 
 local Handler = require "service.handler"
 

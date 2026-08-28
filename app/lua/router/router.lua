@@ -18,9 +18,9 @@ function Router:handle(message)
     local handler = self.routes[message.type]
     if not handler then
         return {
-            state = "error",
-            reason = "Bad type",
-            type = message.type
+            state = MailboxStates.ERROR,
+            type = message.type,
+            msg = "Bad type"
         }
     end
     return handler(message)

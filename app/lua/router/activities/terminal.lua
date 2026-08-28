@@ -22,8 +22,6 @@ function Terminal:run(request)
     request.state = "running"
     self.mailbox:writeMailbox(request)
 
-    print("[devbox] [terminal] Gonna run " .. command)
-
     local shellCommand =
         command .. " > " .. self.paths.real .. "/" .. self.paths.outputFile
     local _, reason, code = os.execute(shellCommand)
