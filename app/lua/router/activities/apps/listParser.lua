@@ -96,7 +96,7 @@ function ListParser.getIcon(appPath, pkgName)
         return MailboxStates.ERROR, "Icon not found"
     end
 
-    local iconData = FileOps.read(fullIconPath)
+    local iconData = FileOps.readBytes(fullIconPath)
     local iconBase64 = base64.encode(iconData)
     return MailboxStates.DONE, iconBase64
 end

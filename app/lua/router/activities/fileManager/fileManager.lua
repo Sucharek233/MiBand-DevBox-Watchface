@@ -2,12 +2,12 @@ local FileManager = {}
 FileManager.__index = FileManager
 
 local enumerator = require "router.activities.fileManager.enumerator"
+local operations = require "router.activities.fileManager.operations"
 
 function FileManager:new(mailbox)
     local obj = {
         type = "io",
-        mailbox = mailbox,
-        enumerator = enumerator
+        mailbox = mailbox
     }
 
     setmetatable(obj, self)
@@ -18,32 +18,53 @@ function FileManager:handle(request)
     local args = request.args
     local type = args.type
 
-    local result = nil
+    -- Wall of if statements incoming
+    -- dw will change this later
+    local state, result
     if type == "list" then
-        result = self:listDir(args)
+        if args.path then
+            state, result = self:listDir(args.path)
+        else
+            state, result = MailboxStates.ERROR, "path missing"
+        end
+
+    elseif type == "cp" then
+        if args.src and args.dst then
+            state, result = operations.copy(args.src, args.dst)
+        else
+            state, result = MailboxStates.ERROR, "src or dst missing"
+        end
+
+    elseif type == "mv" then
+        if args.src and args.dst then
+            state, result = operations.move(args.src, args.dst)
+        else
+            state, result = MailboxStates.ERROR, "src or dst missing"
+        end
+
+    elseif type == "rm" then
+        if args.path then
+            state, result = operations.remove(args.path)
+        else
+            state, result = MailboxStates.ERROR, "path missing"
+        end
     end
 
-    -- keep type in args
     request.args = nil
-    request.args = {
-        type = type
-    }
-
-    if result == nil then
-        request.state = MailboxStates.ERROR
-        self.mailbox:writeMailbox(request)
-        return
-    end
-
     request.state = MailboxStates.DONE
-    request.result = result
+    request.appState = state
+    request.res = result
     self.mailbox:writeMailbox(request)
 end
 
-function FileManager:listDir(args)
-    local path = args.path
+function FileManager:listDir(path)
     local result = enumerator.listDir(path)
-    return result
+
+    if not result then
+        return MailboxStates.ERROR, nil
+    end
+
+    return MailboxStates.DONE, result
 end
 
 return FileManager

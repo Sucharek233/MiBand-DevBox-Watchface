@@ -54,6 +54,14 @@ function FileOps.dirExists(path)
 end
 
 function FileOps.fileExists(path)
+    -- An interesting discovery made in the emulator
+    -- You can apparently open dirs as files in /tmp
+    -- So this is here to prevent that
+    -- It doesn't seem to happen on real device though
+    if FileOps.dirExists(path) then
+        return false
+    end
+
     local file = io.open(path, "rb")
 
     if file then
@@ -62,6 +70,58 @@ function FileOps.fileExists(path)
     else
         return false
     end
+end
+
+function FileOps.getType(path)
+    if FileOps.dirExists(path) then
+        return "dir"
+    elseif FileOps.fileExists(path) then
+        return "file"
+    end
+
+    return nil
+end
+
+function FileOps.getPartitionInfo(partition)
+    local info = FileOps.read("/proc/fs/blocks")
+    if not info then
+        return nil, MailboxStates.ERROR
+    end
+
+    for line in info:gmatch("[^\r\n]+") do
+        if line:match(partition .. "%s*$") or
+           line:match(partition .. "$")
+        then
+            -- Size, Blocks, Used, Available, Mounted on
+            local blk_size, blocks, _, available = line:match("%s*(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+
+            if blk_size and available then
+                local b_size = tonumber(blk_size)
+                local b_avail = tonumber(available)
+                local free_bytes = b_avail * b_size
+
+                local partitionInfo = {
+                    blkSize = b_size,
+                    blkAvail = b_avail,
+                    blks = blocks,
+                    freeBytes = free_bytes
+                }
+
+                return partitionInfo, MailboxStates.DONE
+            end
+        end
+    end
+
+    return nil, MailboxStates.ERROR
+end
+
+function FileOps.getFreeSpace()
+    local info, state = FileOps.getPartitionInfo("/data")
+    if not info or state == MailboxStates.ERROR then
+        return nil, state
+    end
+
+    return info.freeBytes, MailboxStates.DONE
 end
 
 return FileOps

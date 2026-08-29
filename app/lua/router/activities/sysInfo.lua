@@ -28,7 +28,7 @@ function SysInfo:getDiskInfo()
         blocks = FileOps.read("/proc/fs/blocks") or "",
         usage = FileOps.read("/proc/fs/usage") or ""
     }
-    return info
+    return MailboxStates.DONE, info
 end
 
 function SysInfo:gatherInfo()
@@ -43,7 +43,7 @@ function SysInfo:gatherInfo()
         rpmsg = FileOps.read("/proc/rpmsg"),
         partitions = FileOps.read("/proc/partitions"),
     }
-    return info
+    return MailboxStates.DONE, info
 end
 
 local function sanitizeInput(value)
@@ -60,7 +60,7 @@ function SysInfo:getProp(prop)
     local cmd = string.format('getprop "%s"', sProp)
 
     local values = execInTmp(cmd)
-    return values
+    return MailboxStates.DONE, values
 end
 
 function SysInfo:setProp(prop, value)
@@ -68,7 +68,13 @@ function SysInfo:setProp(prop, value)
     local sValue = sanitizeInput(value)
 
     local cmd = string.format('setprop "%s" "%s"', sProp, sValue)
-    os.execute(cmd)
+    local result = os.execute(cmd)
+    
+    if result then
+        return MailboxStates.DONE
+    else
+        return MailboxStates.ERROR
+    end
 end
 
 function SysInfo:handle(request)
@@ -77,12 +83,10 @@ function SysInfo:handle(request)
 
     local state, result = nil, nil
     if type == "disk" then
-        result = self:getDiskInfo()
-        state = MailboxStates.DONE
+        state, result = self:getDiskInfo()
 
     elseif type == "info" then
-        result = self:gatherInfo()
-        state = MailboxStates.DONE
+        state, result = self:gatherInfo()
 
     elseif type == "props" then
         result = execInTmp("getprop")
@@ -90,14 +94,12 @@ function SysInfo:handle(request)
 
     elseif type == "getProp" then
         local prop = args.prop
-        result = self:getProp(prop)
-        state = MailboxStates.DONE
+        state, result = self:getProp(prop)
 
     elseif type == "setProp" then
         local prop = args.prop
         local value = args.value
-        self:setProp(prop, value)
-        state = MailboxStates.DONE
+        state = self:setProp(prop, value)
     end
 
     request.args = nil
