@@ -18,7 +18,7 @@ local function execInTmp(cmd)
 
     local content = FileOps.read(tmpFile)
     os.remove(tmpFile)
-    
+
     return content
 end
 
@@ -48,10 +48,10 @@ end
 
 local function sanitizeInput(value)
     local safe_value = tostring(value or "")
-    safe_value = safe_value:gsub("\\", "\\\\")  -- Escape backslashes first
-    safe_value = safe_value:gsub('"', '\\"')    -- Escape double quotes
-    safe_value = safe_value:gsub("%$", "\\$")   -- Escape dollar signs
-    safe_value = safe_value:gsub("`", "\\`")    -- Escape backticks
+    safe_value = safe_value:gsub("\\", "\\\\")
+    safe_value = safe_value:gsub('"', '\\"')
+    safe_value = safe_value:gsub("%$", "\\$")
+    safe_value = safe_value:gsub("`", "\\`")
     return safe_value
 end
 

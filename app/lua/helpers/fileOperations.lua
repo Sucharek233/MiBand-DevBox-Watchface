@@ -82,6 +82,25 @@ function FileOps.getType(path)
     return nil
 end
 
+function FileOps.getFileSize(path)
+    local file = io.open(path, "rb")
+    if not file then
+        return -1, "open"
+    end
+
+    local success, size = pcall(function()
+        return file:seek("end")
+    end)
+
+    file:close()
+
+    if success and size then
+        return size
+    else
+        return -1, "seek"
+    end
+end
+
 function FileOps.getPartitionInfo(partition)
     local info = FileOps.read("/proc/fs/blocks")
     if not info then

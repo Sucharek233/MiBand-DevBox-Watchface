@@ -42,6 +42,8 @@ function RouterRegister:registerAll()
 
     -- File manager
     local fileManager = FileManager:new(self.mailbox)
+    local fileManagerPaths = self:getPathsForActivity(fileManager, self.paths)
+    fileManager:setPaths(fileManagerPaths)
     self.router:register(fileManager.type, function(request)
         return fileManager:handle(request)
     end)

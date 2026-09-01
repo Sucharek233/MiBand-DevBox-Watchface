@@ -22,7 +22,10 @@ local activityPaths = {
     },
     sensorsLua = {
         outputFile = "sensor_out"
-    }
+    },
+    io = {
+        chunkFile = "chunk"
+    },
 }
 
 -- If activity path is an object, it'll be checked which one is valid
