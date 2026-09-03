@@ -35,7 +35,7 @@ function FileStreamer:open()
 
     local file = io.open(self.path, "rb")
     if not file then
-        return MailboxStates.ERROR, "Failed to open source file"
+        return MailboxStates.ERROR, "Failed to open src file"
     end
 
     self.file = file
