@@ -47,6 +47,7 @@ function RouterRegister:registerAll()
     self.router:register(fileManager.type, function(request)
         return fileManager:handle(request)
     end)
+    self.fileManager = fileManager
 
     -- Sensors
     local sensors = Sensors:new(self.mailbox)
@@ -89,6 +90,7 @@ function RouterRegister:clean()
     self.terminal:clean()
     self.sensors:clean()
     self.apps:clean()
+    self.fileManager:clean()
 end
 
 return RouterRegister

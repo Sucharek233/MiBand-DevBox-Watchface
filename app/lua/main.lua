@@ -1,6 +1,7 @@
 require "components"
 require "about"
 require "extraFunctions"
+require "about"
 
 JSON = require "libs.json"
 FileOps = require "helpers.fileOperations"
@@ -8,7 +9,6 @@ FileOps = require "helpers.fileOperations"
 local Handler = require "service.handler"
 
 local root
-local isRunning = false
 
 local function entry()
     local handler = Handler:new(1000)
@@ -25,7 +25,9 @@ local function entry()
         h = lvgl.PCT(100)
     }
 
-    CreateCenteredLabel(contentContainer, "DevBox Lua Service", 24)
+    -- Split in two columns to fit on mi band screen
+    CreateCenteredLabel(contentContainer, "DevBox Lua", 24)
+    CreateCenteredLabel(contentContainer, "Service", 24)
 
     local statusCard = CreateFlexboxContainer(contentContainer)
     statusCard:set {
@@ -51,7 +53,6 @@ local function entry()
     local statusText = CreateLabel(statusCard, "Stopped", 20)
 
     local function updateUIState(active)
-        isRunning = active
         if active then
             statusText:set { text = "Running", text_color = "#30D158" }
             statusDot:set { bg_color = "#30D158" }
@@ -89,6 +90,15 @@ local function entry()
     cleanBtn:onClicked(function ()
         handler:clean()
         ShowPopup("Service Clean", "Output data and logs cleared.", nil, nil)
+    end)
+
+    local aboutBtn, aboutBtnLabel = CreateBtn(contentContainer, "About")
+    aboutBtnLabel:set {
+        text_color = "#8E8E93",
+        text_font = lvgl.Font(DefFont, 15)
+    }
+    aboutBtn:onClicked(function ()
+        ShowAbout()
     end)
 
     updateUIState(false)

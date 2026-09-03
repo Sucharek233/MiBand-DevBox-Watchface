@@ -1,4 +1,3 @@
--- oh boy
 local FileStreamer = {}
 FileStreamer.__index = FileStreamer
 
@@ -12,14 +11,14 @@ function FileStreamer:new(paths, path, chunkSize, useB64)
 
     local obj = {
         path = path,
-        chunkSize = chunkSize or (1024 * 1024), -- default to 1MB
+        chunkSize = chunkSize or (1024 * 512), -- 512 KB
         useB64 = useB64,
 
         file = nil,
         fileSize = 0,
         currPos = 0,
         chunkCount = 0,
-        
+
         chunkPath = chunkPath,
         quickappPath = quickappPath
     }
@@ -34,8 +33,11 @@ function FileStreamer:open()
         return MailboxStates.ERROR, err
     end
 
-    -- file already opened and checked in getFileSize - no need to check again
     local file = io.open(self.path, "rb")
+    if not file then
+        return MailboxStates.ERROR, "Failed to open source file"
+    end
+
     self.file = file
     self.fileSize = fileSize
 
@@ -53,26 +55,6 @@ function FileStreamer:close()
     self:clean()
 end
 
-function FileStreamer:readChunk()
-    if not self.file then
-        return MailboxStates.ERROR, "File not open"
-    end
-
-    local chunk = self.file:read(self.chunkSize)
-    if not chunk then
-        return MailboxStates.DONE, nil -- EOF
-    end
-
-    self.currPos = self.currPos + #chunk
-    self.chunkCount = self.chunkCount + 1
-
-    if self.useB64 then
-        chunk = base64.encode(chunk)
-    end
-
-    return MailboxStates.DONE, chunk
-end
-
 local function execInTmp(cmd)
     local tmpFile = "/tmp/tmp.txt"
     local fullCmd = cmd .. " > " .. tmpFile
@@ -84,20 +66,58 @@ local function execInTmp(cmd)
     return content
 end
 
+-- Processes a chunk in small RAM-friendly sub-blocks and writes directly to disk
 function FileStreamer:nextChunk()
-    local state, chunk = self:readChunk()
-    if state == MailboxStates.ERROR then
-        return state, chunk
+    if not self.file then
+        return MailboxStates.ERROR, "File not open"
     end
 
-    if not chunk then
-        return MailboxStates.DONE, nil -- EOF
+    -- Check EOF
+    if self.currPos >= self.fileSize then
+        return MailboxStates.DONE, nil
     end
 
-    local written, err = FileOps.writeBytes(self.chunkPath, chunk)
-    if not written then
-        return MailboxStates.ERROR, err
+    -- Open destination chunk file in binary write mode
+    local outFile, err = io.open(self.chunkPath, "wb")
+    if not outFile then
+        return MailboxStates.ERROR, "Failed to open chunk file"
     end
+
+    -- safe 12 KB
+    -- 64+ KB was crashing on real hardware
+    local subBlockSize = 12288
+    local bytesReadThisChunk = 0
+
+    while bytesReadThisChunk < self.chunkSize do
+        -- Calculate remaining bytes to finish this chunk
+        local remainingInChunk = self.chunkSize - bytesReadThisChunk
+        local toRead = math.min(subBlockSize, remainingInChunk)
+
+        local block = self.file:read(toRead)
+        if not block or #block == 0 then
+            break
+        end
+
+        bytesReadThisChunk = bytesReadThisChunk + #block
+
+        -- slowly append chunk to file
+        if self.useB64 then
+            block = base64.encode(block)
+        end
+
+        outFile:write(block)
+    end
+
+    outFile:close()
+
+    -- If no bytes were read at all, EOF
+    if bytesReadThisChunk == 0 then
+        os.remove(self.chunkPath)
+        return MailboxStates.DONE, nil
+    end
+
+    self.currPos = self.currPos + bytesReadThisChunk
+    self.chunkCount = self.chunkCount + 1
 
     local md5sum = execInTmp("md5 " .. self.chunkPath)
 

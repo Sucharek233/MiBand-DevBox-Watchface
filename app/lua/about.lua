@@ -36,18 +36,13 @@ local function init()
     CreateCenteredLabel(root, "About")
 
     local aboutText =
-[[Sensor Test
-Version 1.1
+[[Lua DevBox Service
+Version 1.0
 
-Test your sensors with interactive little games
-You can view raw readings from all sensors too.
+Lua service extending functionality of DevBox
 
 Made by Sucharek233 :)
-This app is open source! Check it out on GitHub: https://github.com/Sucharek233/MB10-SensorTest
-
-WARNING!
-Some sensors can freeze and restart your band.
-In case of a complete freeze, connect your charger quickly 10 times in a row.]]
+This app is open source! Check it out on GitHub: https://github.com/Sucharek233/MiBand-DevBox]]
     local _, label = CreateInfoLabel(root)
     label:set {
         text = aboutText,

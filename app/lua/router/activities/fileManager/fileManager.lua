@@ -67,6 +67,13 @@ function FileManager:handle(request)
                 self.streamer = fileStreamer:new(self.paths, args.path, args.lSize, args.b64)
                 state, result = self.streamer:open()
             end
+
+            if state == MailboxStates.ERROR then
+                if self.streamer ~= nil then
+                    self.streamer:close()
+                end
+                self.streamer = nil
+            end
         end
 
     elseif type == "chunk" then
@@ -79,6 +86,25 @@ function FileManager:handle(request)
         else
             state, result = MailboxStates.ERROR, "Streamer uninitialized"
         end
+
+        if state == MailboxStates.ERROR then
+            if self.streamer ~= nil then
+                self.streamer:close()
+            end
+            self.streamer = nil
+        end
+
+    elseif type == "stop" then
+        if self.streamer then
+            self.streamer:close()
+            self.streamer = nil
+            state, result = MailboxStates.DONE, "Stopped"
+        else
+            state, result = MailboxStates.ERROR, "Streamer uninitialized"
+        end
+
+    else
+        state, result = MailboxStates.ERROR, "Unknown type"
     end
 
     request.args = nil
@@ -100,7 +126,8 @@ end
 
 function FileManager:clean()
     if self.streamer then
-        self.streamer:clean()
+        self.streamer:close()
+        self.streamer = nil
     else
         os.remove(self.paths.real .. "/" .. self.paths.chunkFile)
     end
