@@ -72,6 +72,21 @@ function FileOps.fileExists(path)
     end
 end
 
+-- *sigh*
+-- Apparently, /dev/uorb/sensorname is a directory when opening with lvgl.fs.open_dir (tested on mb10 as well)
+-- This fucks up if sensor is valid checks
+-- So here's the regular function
+function FileOps.fileExistsOld(path)
+    local file = io.open(path, "rb")
+
+    if file then
+        file:close()
+        return true
+    else
+        return false
+    end
+end
+
 function FileOps.getType(path)
     if FileOps.dirExists(path) then
         return "dir"

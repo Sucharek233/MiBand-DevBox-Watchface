@@ -88,7 +88,7 @@ function SensorInfo.getAvailablePredefinedSensors()
 
     for _, sensor in pairs(SensorInfo.PREDEFINED) do
         local fullPath = SensorInfo.PATH .. "/" .. sensor.path
-        sensor.available = FileOps.fileExists(fullPath)
+        sensor.available = FileOps.fileExistsOld(fullPath)
     end
 
     SensorInfo._checked = true

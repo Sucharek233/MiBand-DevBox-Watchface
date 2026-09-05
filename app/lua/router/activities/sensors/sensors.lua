@@ -160,7 +160,7 @@ function Sensors:subscribe(args)
         return MailboxStates.ERROR, "Missing sensor name"
     end
     
-    if not FileOps.fileExists("/dev/uorb/" .. sensorName) then
+    if not FileOps.fileExistsOld("/dev/uorb/" .. sensorName) then
         return MailboxStates.ERROR, "Sensor not found"
     end
 
