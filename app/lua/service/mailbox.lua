@@ -37,6 +37,11 @@ function Mailbox:writeMailbox(content)
         error(err)
     end
 
+    success, err = FileOps.write(self.paths.mailboxState, content.state)
+    if not success and err then
+        error(err)
+    end
+
     return true
 end
 

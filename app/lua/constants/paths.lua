@@ -14,6 +14,7 @@ local basePaths = {
     pkgName = "com.sucharek.miband_interconnect_test",
 
     mailbox = "mailbox.json",
+    mailboxState = "state"
 }
 
 local activityPaths = {
@@ -103,6 +104,7 @@ local function checkPaths()
 
     -- don't need quickapp path for mailbox, since it's already set there
     paths.mailbox = paths.real .. "/" .. basePaths.mailbox
+    paths.mailboxState = paths.real .. "/" .. basePaths.mailboxState
 
     return paths
 end
