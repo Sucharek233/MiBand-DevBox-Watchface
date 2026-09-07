@@ -50,7 +50,7 @@ function Mailbox:process()
 
     -- we only wanna wait for pending
     local state = mailbox.state
-    if state ~= "pending" then
+    if state ~= MailboxStates.PENDING then
         return
     end
 
