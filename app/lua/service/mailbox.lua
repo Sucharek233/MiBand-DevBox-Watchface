@@ -14,7 +14,7 @@ function Mailbox:new(router, paths)
     return obj
 end
 
-function Mailbox:readMailbox()
+function Mailbox:read()
     local content, err = FileOps.read(self.paths.mailbox)
 
     if content == nil or err then
@@ -29,33 +29,45 @@ function Mailbox:readMailbox()
     return json.decode(content)
 end
 
-
-function Mailbox:writeMailbox(content)
-    local success, err = FileOps.write(self.paths.mailbox, json.encode(content))
-
-    if not success and err then
-        error(err)
+function Mailbox:readState()
+    -- FileOps not used because it's reading a single byte
+    local f, err = io.open(self.paths.mailboxState, "rb")
+    if not f then
+        return nil
     end
 
-    success, err = FileOps.write(self.paths.mailboxState, content.state)
-    if not success and err then
-        error(err)
+    local rawChar = f:read(1)
+    f:close()
+
+    if not rawChar or rawChar == "" then
+        return nil
+    end
+
+    return string.byte(rawChar)
+end
+
+function Mailbox:writeMailbox(content)
+    FileOps.write(self.paths.mailbox, json.encode(content))
+
+    local stateNum = tonumber(content.state) or 0
+    local f, err = io.open(self.paths.mailboxState, "wb")
+    if f then
+        f:write(string.char(stateNum))
+        f:close()
     end
 
     return true
 end
 
-
 function Mailbox:process()
-    local mailbox = self:readMailbox()
-    if mailbox == nil then
-        -- add some error handling later
+    local state = self:readState()
+    
+    if state ~= MailboxStates.PENDING then
         return
     end
 
-    -- we only wanna wait for pending
-    local state = mailbox.state
-    if state ~= MailboxStates.PENDING then
+    local mailbox = self:read()
+    if not mailbox then
         return
     end
 
@@ -63,8 +75,8 @@ function Mailbox:process()
 end
 
 function Mailbox:clean()
-    local mailboxPath = self.paths.mailbox
-    os.remove(mailboxPath)
+    os.remove(self.paths.mailbox)
+    os.remove(self.paths.mailboxState)
 end
 
 return Mailbox

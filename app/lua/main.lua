@@ -10,8 +10,10 @@ local Handler = require "service.handler"
 
 local root
 
+local pollingRate = 100
+
 local function entry()
-    local handler = Handler:new(1000)
+    local handler = Handler:new(pollingRate)
 
     _, root = CreateRoot()
 
