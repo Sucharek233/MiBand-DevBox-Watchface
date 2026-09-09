@@ -14,6 +14,7 @@ end
 local function execInTmp(cmd)
     local tmpFile = "/tmp/tmp.txt"
     local fullCmd = cmd .. " > " .. tmpFile
+
     os.execute(fullCmd)
 
     local content = FileOps.read(tmpFile)
@@ -28,6 +29,7 @@ function SysInfo:getDiskInfo()
         blocks = FileOps.read("/proc/fs/blocks") or "",
         usage = FileOps.read("/proc/fs/usage") or ""
     }
+
     return MailboxStates.DONE, info
 end
 
@@ -43,15 +45,18 @@ function SysInfo:gatherInfo()
         rpmsg = FileOps.read("/proc/rpmsg"),
         partitions = FileOps.read("/proc/partitions"),
     }
+
     return MailboxStates.DONE, info
 end
 
 local function sanitizeInput(value)
     local safe_value = tostring(value or "")
+
     safe_value = safe_value:gsub("\\", "\\\\")
     safe_value = safe_value:gsub('"', '\\"')
     safe_value = safe_value:gsub("%$", "\\$")
     safe_value = safe_value:gsub("`", "\\`")
+
     return safe_value
 end
 
@@ -60,6 +65,7 @@ function SysInfo:getProp(prop)
     local cmd = string.format('getprop "%s"', sProp)
 
     local values = execInTmp(cmd)
+
     return MailboxStates.DONE, values
 end
 
@@ -69,7 +75,7 @@ function SysInfo:setProp(prop, value)
 
     local cmd = string.format('setprop "%s" "%s"', sProp, sValue)
     local result = os.execute(cmd)
-    
+
     if result then
         return MailboxStates.DONE
     else
@@ -77,35 +83,73 @@ function SysInfo:setProp(prop, value)
     end
 end
 
+
+local handlers = {
+    disk = {
+        run = function(self, _)
+            return self:getDiskInfo()
+        end
+    },
+
+    info = {
+        run = function(self, _)
+            return self:gatherInfo()
+        end
+    },
+
+    props = {
+        run = function(self, _)
+            return MailboxStates.DONE, execInTmp("getprop")
+        end
+    },
+
+    getProp = {
+        required = {
+            prop = "string"
+        },
+
+        run = function(self, args)
+            return self:getProp(args.prop)
+        end
+    },
+
+    setProp = {
+        required = {
+            prop = "string",
+            value = "string"
+        },
+
+        run = function(self, args)
+            return self:setProp(args.prop, args.value)
+        end
+    }
+}
+
 function SysInfo:handle(request)
-    local args = request.args
+    local args = request.args or {}
     local type = args.type
 
-    local state, result = nil, nil
-    if type == "disk" then
-        state, result = self:getDiskInfo()
+    local handler = handlers[type]
 
-    elseif type == "info" then
-        state, result = self:gatherInfo()
+    local state, result
 
-    elseif type == "props" then
-        result = execInTmp("getprop")
-        state = MailboxStates.DONE
+    if not handler then
+        state, result = MailboxStates.ERROR, "Unknown type"
+    else
+        local valid, err = ArgsValidator.validate(args, handler)
 
-    elseif type == "getProp" then
-        local prop = args.prop
-        state, result = self:getProp(prop)
-
-    elseif type == "setProp" then
-        local prop = args.prop
-        local value = args.value
-        state = self:setProp(prop, value)
+        if not valid then
+            state, result = MailboxStates.ERROR, err
+        else
+            state, result = handler.run(self, args)
+        end
     end
 
     request.args = nil
     request.state = MailboxStates.DONE
     request.appState = state
     request.res = result
+
     self.mailbox:writeMailbox(request)
 end
 
