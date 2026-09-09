@@ -12,7 +12,6 @@ local function validatePaths(src, dst)
 
     local dstType = FileOps.getType(dst)
 
-    -- Rule: Cannot copy/move a directory onto an existing regular file
     if srcType == "dir" and dstType == "file" then
         return nil, "Cannot overwrite file with directory"
     end
@@ -33,7 +32,7 @@ function Operations.copy(src, dst)
     local cmd
     if srcType == "dir" then
         -- Destination needs to be created before copying
-        -- Shell doesn't support &&, ; is used instead
+        -- nsh doesn't support &&, ; is used instead
         cmd = string.format('mkdir -p %s ; cp -r %s %s', safeDst, safeSrc, safeDst)
     else
         cmd = string.format('cp %s %s', safeSrc, safeDst)
@@ -73,7 +72,6 @@ function Operations.move(src, dst)
         end
 
         local result = os.execute(cmd)
-        print("[devbox] " .. cmd)
 
         return result and MailboxStates.DONE or MailboxStates.ERROR
     end

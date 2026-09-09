@@ -5,6 +5,126 @@ local enumerator = require "router.activities.fileManager.enumerator"
 local operations = require "router.activities.fileManager.operations"
 local fileStreamer = require "router.activities.fileManager.fileStreamer"
 
+local handlers = {
+    list = {
+        required = {
+            path = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return self:listDir(args.path)
+        end
+    },
+
+    cp = {
+        required = {
+            src = "string",
+            dst = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return operations.copy(args.src, args.dst)
+        end
+    },
+
+    mv = {
+        required = {
+            src = "string",
+            dst = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return operations.move(args.src, args.dst)
+        end
+    },
+
+    rm = {
+        required = {
+            path = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return operations.remove(args.path)
+        end
+    },
+
+    getStream = {
+        required = {
+            path = "string"
+        },
+        optional = {
+            lSize = {
+                type = "number",
+                default = 4096
+            },
+
+            b64 = {
+                type = "boolean",
+                default = false
+            }
+        },
+
+        run = function(self, args)
+            if self.streamer ~= nil then
+                return MailboxStates.ERROR, "Already streaming"
+            end
+
+            self.streamer = fileStreamer:new(
+                self.paths,
+                args.path,
+                args.lSize,
+                args.b64
+            )
+
+            local state, result = self.streamer:open()
+
+            if state == MailboxStates.ERROR then
+                self:clearStreamer()
+            end
+
+            return state, result
+        end
+    },
+
+    chunk = {
+        required = {},
+        optional = {},
+
+        run = function(self, _)
+            if not self.streamer then
+                return MailboxStates.ERROR, "Streamer uninitialized"
+            end
+
+            local state, result = self.streamer:nextChunk()
+
+            if state == MailboxStates.DONE or state == MailboxStates.ERROR then
+                self:clearStreamer()
+            end
+
+            return state, result
+        end
+    },
+
+    stop = {
+        required = {},
+        optional = {},
+
+        run = function(self, _)
+            if not self.streamer then
+                return MailboxStates.ERROR, "Streamer uninitialized"
+            end
+
+            self:clearStreamer()
+
+            return MailboxStates.DONE, "Stopped"
+        end
+    }
+}
+
 function FileManager:new(mailbox)
     local obj = {
         type = "io",
@@ -23,94 +143,30 @@ function FileManager:setPaths(paths)
 end
 
 function FileManager:handle(request)
-    local args = request.args
+    local args = request.args or {}
     local type = args.type
 
-    -- Wall of if statements incoming
-    -- dw will change this later
+    local handler = handlers[type]
+
     local state, result
-    if type == "list" then
-        if args.path then
-            state, result = self:listDir(args.path)
-        else
-            state, result = MailboxStates.ERROR, "path missing"
-        end
 
-    elseif type == "cp" then
-        if args.src and args.dst then
-            state, result = operations.copy(args.src, args.dst)
-        else
-            state, result = MailboxStates.ERROR, "src or dst missing"
-        end
-
-    elseif type == "mv" then
-        if args.src and args.dst then
-            state, result = operations.move(args.src, args.dst)
-        else
-            state, result = MailboxStates.ERROR, "src or dst missing"
-        end
-
-    elseif type == "rm" then
-        if args.path then
-            state, result = operations.remove(args.path)
-        else
-            state, result = MailboxStates.ERROR, "path missing"
-        end
-
-
-    elseif type == "getStream" then
-        -- lSize
-        if args.path then
-            if self.streamer ~= nil then
-                state, result = MailboxStates.ERROR, "Already streaming"
-            else
-                self.streamer = fileStreamer:new(self.paths, args.path, args.lSize, args.b64)
-                state, result = self.streamer:open()
-            end
-
-            if state == MailboxStates.ERROR then
-                if self.streamer ~= nil then
-                    self.streamer:close()
-                end
-                self.streamer = nil
-            end
-        end
-
-    elseif type == "chunk" then
-        if self.streamer then
-            state, result = self.streamer:nextChunk()
-            if state == MailboxStates.DONE then
-                self.streamer:close()
-                self.streamer = nil
-            end
-        else
-            state, result = MailboxStates.ERROR, "Streamer uninitialized"
-        end
-
-        if state == MailboxStates.ERROR then
-            if self.streamer ~= nil then
-                self.streamer:close()
-            end
-            self.streamer = nil
-        end
-
-    elseif type == "stop" then
-        if self.streamer then
-            self.streamer:close()
-            self.streamer = nil
-            state, result = MailboxStates.DONE, "Stopped"
-        else
-            state, result = MailboxStates.ERROR, "Streamer uninitialized"
-        end
-
-    else
+    if not handler then
         state, result = MailboxStates.ERROR, "Unknown type"
+    else
+        local valid, err = ArgsValidator.validate(args, handler)
+
+        if not valid then
+            state, result = MailboxStates.ERROR, err
+        else
+            state, result = handler.run(self, args)
+        end
     end
 
     request.args = nil
     request.state = MailboxStates.DONE
     request.appState = state
     request.res = result
+
     self.mailbox:writeMailbox(request)
 end
 
@@ -124,10 +180,16 @@ function FileManager:listDir(path)
     return MailboxStates.DONE, result
 end
 
-function FileManager:clean()
+function FileManager:clearStreamer()
     if self.streamer then
         self.streamer:close()
         self.streamer = nil
+    end
+end
+
+function FileManager:clean()
+    if self.streamer then
+        self:clearStreamer()
     else
         os.remove(self.paths.real .. "/" .. self.paths.chunkFile)
     end
