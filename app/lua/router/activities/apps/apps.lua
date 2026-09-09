@@ -5,9 +5,6 @@ local listParser = require "router.activities.apps.listParser"
 
 local handlers = {
     list = {
-        required = {},
-        optional = {},
-
         run = function(self, _)
             return self:readAppList(true)
         end
@@ -17,7 +14,6 @@ local handlers = {
         required = {
             content = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return self:writeAppList(args.content)
@@ -25,9 +21,6 @@ local handlers = {
     },
 
     listApps = {
-        required = {},
-        optional = {},
-
         run = function(self, _)
             return MailboxStates.DONE, listParser.getApps(self.appList)
         end
@@ -37,7 +30,6 @@ local handlers = {
         required = {
             pkg = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return listParser.getAppInfo(self.appList, args.pkg)
@@ -48,7 +40,6 @@ local handlers = {
         required = {
             pkg = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return listParser.readManifest(self.paths.appPath, args.pkg)
@@ -60,7 +51,6 @@ local handlers = {
             pkg = "string",
             content = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return listParser.writeManifest(
@@ -75,7 +65,6 @@ local handlers = {
         required = {
             pkg = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return listParser.getIcon(self.paths.appPath, args.pkg)

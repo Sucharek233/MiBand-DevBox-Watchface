@@ -10,7 +10,6 @@ local handlers = {
         required = {
             path = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return self:listDir(args.path)
@@ -22,7 +21,6 @@ local handlers = {
             src = "string",
             dst = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return operations.copy(args.src, args.dst)
@@ -34,7 +32,6 @@ local handlers = {
             src = "string",
             dst = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return operations.move(args.src, args.dst)
@@ -45,7 +42,6 @@ local handlers = {
         required = {
             path = "string"
         },
-        optional = {},
 
         run = function(self, args)
             return operations.remove(args.path)
@@ -91,9 +87,6 @@ local handlers = {
     },
 
     chunk = {
-        required = {},
-        optional = {},
-
         run = function(self, _)
             if not self.streamer then
                 return MailboxStates.ERROR, "Streamer uninitialized"
@@ -110,9 +103,6 @@ local handlers = {
     },
 
     stop = {
-        required = {},
-        optional = {},
-
         run = function(self, _)
             if not self.streamer then
                 return MailboxStates.ERROR, "Streamer uninitialized"

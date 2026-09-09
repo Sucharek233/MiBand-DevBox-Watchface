@@ -3,10 +3,13 @@ local ArgsValidator = {}
 function ArgsValidator.validate(args, schema)
     args = args or {}
 
+    local required = schema.required or {}
+    local optional = schema.optional or {}
+
     local allowed = {}
 
     -- Required arguments
-    for name, expectedType in pairs(schema.required or {}) do
+    for name, expectedType in pairs(required) do
         allowed[name] = true
 
         if args[name] == nil then
@@ -19,7 +22,7 @@ function ArgsValidator.validate(args, schema)
     end
 
     -- Optional arguments
-    for name, definition in pairs(schema.optional or {}) do
+    for name, definition in pairs(optional) do
         allowed[name] = true
 
         if args[name] == nil then
