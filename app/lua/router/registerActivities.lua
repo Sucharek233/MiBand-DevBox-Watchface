@@ -67,7 +67,7 @@ function RouterRegister:registerAll()
     -- Lua shell
     local shell = LuaShell:new(self.mailbox)
     self.router:register(shell.type, function(request)
-        return shell:execute(request)
+        return shell:handle(request)
     end)
 
     -- Apps

@@ -33,7 +33,7 @@ function LuaShell:execute(request)
     local chunk, err = load(codeStr)
 
     if not chunk then
-        request.luaState = MailboxStates.ERROR
+        request.appState = MailboxStates.ERROR
         request.reason = "syntax"
         request.msg = tostring(err)
         request.args = nil
@@ -49,7 +49,7 @@ function LuaShell:execute(request)
     local printOutput = #printLogs > 0 and table.concat(printLogs, "\n") or nil
 
     if not success then
-        request.luaState = MailboxStates.ERROR
+        request.appState = MailboxStates.ERROR
         request.reason = "runtime"
         request.msg = tostring(result)
         request.print = printOutput
@@ -60,11 +60,37 @@ function LuaShell:execute(request)
 
     result = sanitizer.sanitize(result)
 
-    request.luaState = MailboxStates.DONE
+    request.appState = MailboxStates.DONE
     request.res = result
     request.print = printOutput -- will be run through JSON.encode anyway, here it's already sanitized
     request.args = nil
     self.mailbox:writeMailbox(request)
+end
+
+-- This is enough, since there's only one function here
+function LuaShell:handle(request)
+    local args = request.args or {}
+
+    local schema = {
+        required = {
+            code = "string"
+        }
+    }
+
+    local valid, err = ArgsValidator.validate(args, schema)
+
+    if not valid then
+        request.args = nil
+        request.state = MailboxStates.DONE
+        request.appState = MailboxStates.ERROR
+        request.reason = "validation"
+        request.msg = err
+
+        self.mailbox:writeMailbox(request)
+        return
+    end
+
+    self:execute(request)
 end
 
 return LuaShell
