@@ -4,6 +4,54 @@ Sensors.__index = Sensors
 local SensorProvider = require "router.activities.sensors.sensorProvider"
 local sensorInfo = require "router.activities.sensors.sensorInfo"
 
+local handlers = {
+    list = {
+        run = function(self, _)
+            return MailboxStates.DONE, sensorInfo.getAvailableSensors()
+        end
+    },
+
+    listPre = {
+        run = function(self, _)
+            return MailboxStates.DONE, sensorInfo.getAvailablePredefinedSensors()
+        end
+    },
+
+    sub = {
+        required = {
+            sensor = "string"
+        },
+        optional = {
+            provider = {
+                type = "string",
+                default = "file"
+            },
+
+            useKnown = {
+                type = "boolean",
+                default = true
+            },
+
+            period = {
+                type = "number",
+                default = 50
+            }
+        },
+
+        run = function(self, args)
+            local state, result = self:subscribe(args)
+
+            return state, result
+        end
+    },
+
+    unsub = {
+        run = function(self, _)
+            return self:unsubscribe()
+        end
+    }
+}
+
 function Sensors:new(mailbox)
     local obj = {
         type = "sensorsLua",
@@ -29,14 +77,6 @@ function Sensors:setPaths(paths)
     self.paths = paths
 
     self.quickappOutputFile = self.paths.quickapp .. "/" .. self.paths.outputFile
-end
-
-local function returnSensorList()
-    return MailboxStates.DONE, sensorInfo.getAvailableSensors()
-end
-
-local function returnPredefinedSensorList()
-    return MailboxStates.DONE, sensorInfo.getAvailablePredefinedSensors()
 end
 
 --- ------------------------------
@@ -147,14 +187,10 @@ function Sensors:subscribe(args)
         return MailboxStates.ERROR, "Already subscribed"
     end
 
-    local provider = args.provider or "file"
+    local provider = args.provider
     local sensorName = args.sensor
-    local useKnown = args.useKnown -- can't use or here
-    local period = args.period or 50
-
-    if useKnown == nil then
-        useKnown = true
-    end
+    local useKnown = args.useKnown
+    local period = args.period
 
     if not sensorName then
         return MailboxStates.ERROR, "Missing sensor name"
@@ -174,7 +210,7 @@ function Sensors:subscribe(args)
             end
         end
     end
-    
+
     local function onSensorData(rawReading)
         local parsed = parseReading(rawReading, provider, props)
         if parsed then
@@ -217,26 +253,34 @@ function Sensors:unsubscribe()
 end
 
 function Sensors:handle(request)
-    local args = request.args
+    local args = request.args or {}
     local type = args.type
 
-    local state = nil
-    local result = nil
-    if type == "list" then
-        state, result = returnSensorList()
-    elseif type == "listPre" then
-        state, result = returnPredefinedSensorList()
-    elseif type == "sub" then
-        state, result = self:subscribe(args)
-        request.out = self.quickappOutputFile
-    elseif type == "unsub" then
-        state, result = self:unsubscribe()
+    local handler = handlers[type]
+
+    local state, result
+
+    if not handler then
+        state, result = MailboxStates.ERROR, "Unknown type"
+    else
+        local valid, err = ArgsValidator.validate(args, handler)
+
+        if not valid then
+            state, result = MailboxStates.ERROR, err
+        else
+            state, result = handler.run(self, args)
+
+            if type == "sub" and state == MailboxStates.DONE then
+                request.out = self.quickappOutputFile
+            end
+        end
     end
 
     request.args = nil
     request.state = MailboxStates.DONE
-    request.sensorState = state
+    request.appState = state
     request.res = result
+
     self.mailbox:writeMailbox(request)
 end
 
