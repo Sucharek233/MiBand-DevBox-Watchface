@@ -11,7 +11,7 @@ function FileStreamer:new(paths, path, chunkSize, useB64)
 
     local obj = {
         path = path,
-        chunkSize = chunkSize or (1024 * 512), -- 512 KB
+        chunkSize = chunkSize,
         useB64 = useB64,
 
         file = nil,
@@ -66,7 +66,6 @@ local function execInTmp(cmd)
     return content
 end
 
--- Processes a chunk in small RAM-friendly sub-blocks and writes directly to disk
 function FileStreamer:nextChunk()
     if not self.file then
         return MailboxStates.ERROR, "File not open"
@@ -89,7 +88,6 @@ function FileStreamer:nextChunk()
     local bytesReadThisChunk = 0
 
     while bytesReadThisChunk < self.chunkSize do
-        -- Calculate remaining bytes to finish this chunk
         local remainingInChunk = self.chunkSize - bytesReadThisChunk
         local toRead = math.min(subBlockSize, remainingInChunk)
 
@@ -110,7 +108,7 @@ function FileStreamer:nextChunk()
 
     outFile:close()
 
-    -- If no bytes were read at all, EOF
+    -- EOF
     if bytesReadThisChunk == 0 then
         os.remove(self.chunkPath)
         return MailboxStates.DONE, nil

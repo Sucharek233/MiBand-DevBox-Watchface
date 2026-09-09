@@ -59,7 +59,7 @@ local handlers = {
         optional = {
             lSize = {
                 type = "number",
-                default = 4096
+                default = 1024 * 512 -- 512 KB
             },
 
             b64 = {

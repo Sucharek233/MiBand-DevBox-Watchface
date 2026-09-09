@@ -3,12 +3,91 @@ Apps.__index = Apps
 
 local listParser = require "router.activities.apps.listParser"
 
+local handlers = {
+    list = {
+        required = {},
+        optional = {},
+
+        run = function(self, _)
+            return self:readAppList(true)
+        end
+    },
+
+    writeList = {
+        required = {
+            content = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return self:writeAppList(args.content)
+        end
+    },
+
+    listApps = {
+        required = {},
+        optional = {},
+
+        run = function(self, _)
+            return MailboxStates.DONE, listParser.getApps(self.appList)
+        end
+    },
+
+    info = {
+        required = {
+            pkg = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return listParser.getAppInfo(self.appList, args.pkg)
+        end
+    },
+
+    manifest = {
+        required = {
+            pkg = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return listParser.readManifest(self.paths.appPath, args.pkg)
+        end
+    },
+
+    writeManifest = {
+        required = {
+            pkg = "string",
+            content = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return listParser.writeManifest(
+                self.paths.appPath,
+                args.pkg,
+                args.content
+            )
+        end
+    },
+
+    icon = {
+        required = {
+            pkg = "string"
+        },
+        optional = {},
+
+        run = function(self, args)
+            return listParser.getIcon(self.paths.appPath, args.pkg)
+        end
+    }
+}
+
 function Apps:new(mailbox)
     local obj = {
         type = "apps",
         mailbox = mailbox,
         paths = nil,
-
         appList = nil,
         appListRaw = nil
     }
@@ -21,83 +100,72 @@ function Apps:setPaths(paths)
     self.paths = paths
 end
 
+-- if invalid, keep the old list and return error
 function Apps:readAppList(dontParse, reread)
     if self.appListRaw == nil or reread == true then
-        self.appListRaw = FileOps.read(self.paths.jsonList)
-        self.appList = JSON.decode(self.appListRaw)
+        local appListRaw = FileOps.read(self.paths.jsonList)
+
+        local ok, err = pcall(function()
+            self.appList = JSON.decode(appListRaw)
+        end)
+        if not ok then
+            self.appList = nil
+            self.appListRaw = nil
+            return MailboxStates.ERROR, "Unable to parse app list: " .. err
+        else
+            self.appListRaw = appListRaw
+        end
     end
 
     if dontParse then
-        return self.appListRaw
+        return MailboxStates.DONE, self.appListRaw
     end
 
-    return self.appList
+    return MailboxStates.DONE, self.appList
 end
 
 function Apps:writeAppList(appList)
-    if not appList then
-        return MailboxStates.ERROR, "No content"
-    end
-
-    local appListStr
-    local appListType = type(appList)
-
-    if appListType == "string" then
-        appListStr = appList
-    elseif appListType == "table" then
-        appListStr = JSON.encode(appList)
-    end
-
-    FileOps.write(self.paths.jsonList, appListStr)
+    FileOps.write(self.paths.jsonList, appList)
 
     -- Update list
-    self:readAppList(true, true)
+    local state, res = self:readAppList(true, true)
+    if state == MailboxStates.ERROR then
+        return state, res
+    end
+
     return MailboxStates.DONE, "Written"
 end
 
 function Apps:handle(request)
-    local args = request.args
+    local args = request.args or {}
     local type = args.type
 
     if self.appListRaw == nil then
         self:readAppList(true, true)
     end
 
-    local state = nil
-    local result = nil
-    if type == "list" then
-        result = self:readAppList(true)
-        state = MailboxStates.DONE
+    local handler = handlers[type]
 
-    elseif type == "writeList" then
-        state, result = self:writeAppList(self.appList)
+    local state, result
 
-    elseif type == "listApps" then
-        result = listParser.getApps(self.appList)
-        state = MailboxStates.DONE
+    if not handler then
+        state, result = MailboxStates.ERROR, "Unknown type"
+    else
+        local valid, err = ArgsValidator.validate(args, handler)
 
-    elseif type == "info" then
-        state, result = listParser.getAppInfo(self.appList, args.pkg)
-
-    elseif type == "manifest" then
-        state, result = listParser.readManifest(self.paths.appPath, args.pkg)
-
-    elseif type == "writeManifest" then
-        state, result = listParser.writeManifest(self.paths.appPath, args.pkg, args.content)
-
-    elseif type == "icon" then
-        state, result = listParser.getIcon(self.paths.appPath, args.pkg)
+        if not valid then
+            state, result = MailboxStates.ERROR, err
+        else
+            state, result = handler.run(self, args)
+        end
     end
 
     request.args = nil
     request.state = MailboxStates.DONE
     request.appState = state
     request.res = result
-    self.mailbox:writeMailbox(request)
-end
 
-function Apps:clean()
-    
+    self.mailbox:writeMailbox(request)
 end
 
 return Apps

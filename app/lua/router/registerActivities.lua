@@ -77,7 +77,6 @@ function RouterRegister:registerAll()
     self.router:register(apps.type, function(request)
         return apps:handle(request)
     end)
-    self.apps = apps
 
     -- SysInfo
     local sysInfo = SysInfo:new(self.mailbox)
@@ -89,7 +88,6 @@ end
 function RouterRegister:clean()
     self.terminal:clean()
     self.sensors:clean()
-    self.apps:clean()
     self.fileManager:clean()
 end
 
