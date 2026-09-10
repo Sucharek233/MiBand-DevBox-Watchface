@@ -26,15 +26,21 @@ local handlers = {
                 type = "string",
                 default = "file"
             },
-
             useKnown = {
                 type = "boolean",
                 default = true
             },
-
-            period = {
+            dataPollPeriod = {
                 type = "number",
-                default = 50
+                default = 80
+            },
+            streamEntries = {
+                type = "number",
+                default = 10
+            },
+            sendInterval = {
+                type = "number",
+                default = 1000
             }
         },
 
@@ -58,15 +64,17 @@ function Sensors:new(mailbox)
         mailbox = mailbox,
         paths = nil,
         quickappOutputFile = nil,
-        
+
         activeSensor = {
             obj = nil,
             provider = nil,
             known = false
         },
         buffer = {},
+
         flushTimer = nil,
-        maxCapPerSecond = 10,
+        flushTimerPeriod = 1000, -- 1 second 
+        maxCapPerFlush = 10,
     }
 
     setmetatable(obj, self)
@@ -135,7 +143,7 @@ function Sensors:startFlushing()
 
     self.flushTimer = lvgl.Timer({
         paused = false,
-        period = 1000, -- 1 second
+        period = self.flushTimerPeriod, -- 1 second
         repeat_count = -1,
         cb = function()
             self:flushBufferToFile()
@@ -149,7 +157,7 @@ function Sensors:stopFlushing()
         self.flushTimer:delete()
         self.flushTimer = nil
     end
-    -- Flush any remaining data in memory before shutting down
+    -- Flush remaining data
     self:flushBufferToFile()
 end
 
@@ -161,18 +169,17 @@ function Sensors:flushBufferToFile()
 
     local selectedReadings = {}
 
-    if totalReadings <= self.maxCapPerSecond then
+    if totalReadings <= self.maxCapPerFlush then
         selectedReadings = self.buffer
     else
         -- Downsample evenly across the accumulated buffer
-        local step = totalReadings / self.maxCapPerSecond
-        for i = 1, self.maxCapPerSecond do
+        local step = totalReadings / self.maxCapPerFlush
+        for i = 1, self.maxCapPerFlush do
             local index = math.floor(i * step)
             table.insert(selectedReadings, self.buffer[index])
         end
     end
 
-    -- Write selected array as JSON
     local filePath = self.paths.real .. "/" .. self.paths.outputFile
     pcall(function()
         local readingsJSON = JSON.encode(selectedReadings)
@@ -190,12 +197,14 @@ function Sensors:subscribe(args)
     local provider = args.provider
     local sensorName = args.sensor
     local useKnown = args.useKnown
-    local period = args.period
+    local period = args.dataPollPeriod
+    self.flushTimerPeriod = args.sendInterval
+    self.maxCapPerFlush = args.streamEntries
 
     if not sensorName then
         return MailboxStates.ERROR, "Missing sensor name"
     end
-    
+
     if not FileOps.fileExistsOld("/dev/uorb/" .. sensorName) then
         return MailboxStates.ERROR, "Sensor not found"
     end

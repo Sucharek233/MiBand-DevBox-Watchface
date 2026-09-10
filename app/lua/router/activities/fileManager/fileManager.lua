@@ -60,7 +60,7 @@ local handlers = {
 
             b64 = {
                 type = "boolean",
-                default = false
+                default = true
             }
         },
 
