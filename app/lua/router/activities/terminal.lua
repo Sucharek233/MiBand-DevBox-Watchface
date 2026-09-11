@@ -26,11 +26,13 @@ end
 
 function Terminal:run(request)
     local command = request.args.cmd
+    local cwd = request.args.cwd
 
     -- Wrapping the command in `sh -c` is needed to properly handle redirection and such
     local safeCmd = sanitizeShellCmd(command)
     local shellCommand = string.format(
-        'sh -c "%s" > "%s"',
+        'cd "%s" ; sh -c "%s" > "%s"',
+        cwd,
         safeCmd,
         self.paths.real .. "/" .. self.paths.outputFile
     )
@@ -55,6 +57,12 @@ function Terminal:handle(request)
     local schema = {
         required = {
             cmd = "string"
+        },
+        optional = {
+            cwd = {
+                type = "string",
+                default = "/"
+            }
         }
     }
 
