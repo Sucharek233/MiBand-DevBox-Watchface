@@ -30,9 +30,10 @@ function Terminal:run(request)
 
     -- Wrapping the command in `sh -c` is needed to properly handle redirection and such
     local safeCmd = sanitizeShellCmd(command)
+    local safeCwd = sanitizeShellCmd(cwd)
     local shellCommand = string.format(
         'cd "%s" ; sh -c "%s" > "%s"',
-        cwd,
+        safeCwd,
         safeCmd,
         self.paths.real .. "/" .. self.paths.outputFile
     )
