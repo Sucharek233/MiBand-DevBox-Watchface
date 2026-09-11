@@ -11,7 +11,7 @@ local basePaths = {
         "/data/files"
     },
     quickapp = "internal://files",
-    pkgName = "com.sucharek.miband_interconnect_test",
+    pkgName = "com.sucharek.devbox",
 
     mailbox = "mailbox.json",
     mailboxState = "state"
