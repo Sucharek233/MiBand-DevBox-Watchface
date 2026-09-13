@@ -79,7 +79,7 @@ Responses preserve `id`, `type` and add `res`, `appState`.
 | System Info | `sysInfoLua` | Read system information and get/set system properties |
 | Lua Shell | `luashell` | Execute Lua code |
 
-Refer to [DevBox docs](addThisAfterItsDone) for available arguments.
+Refer to [DevBox docs](https://github.com/Sucharek233/MiBand-DevBox/tree/master/docs) for available arguments.
 
 ## Device Paths
 
@@ -97,9 +97,6 @@ Activities should validate incoming arguments with `helpers.argsValidator` and r
 
 ## Compilation
 Use [EasyFace](https://github.com/m0tral/EasyFace) to compile this watchface.
-
-## Installation
-Refer to [this](addThisAfterMainReadmeIsDone) installation guide
 
 ## License
 
